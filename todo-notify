@@ -1,0 +1,28 @@
+#!/usr/bin/env ruby
+
+require_relative 'lib/todo-notify'
+
+# Configuration variables
+$todo_file = "/home/sam/Dropbox/todo/todo.txt"
+$title     = "Todo: %P %p %c"
+
+def random_task
+  File.open($todo_file) do |file|
+    lines = file.readlines
+    lines[rand(lines.length)]
+  end.chomp
+end
+
+def parse_title title, task
+  title.gsub('%c', task.contexts.join(', ')).
+        gsub('%p', task.projects.join(', ')).
+        gsub('%P', task.priority).
+        gsub(/\s+/, ' ')
+end
+
+task  = Todo::Task.new random_task
+
+title   = parse_title $title, task
+content = task.text
+
+`notify-send "#{title}" "#{content}"`
