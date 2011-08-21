@@ -1,0 +1,88 @@
+#!/usr/bin/env ruby
+
+require 'todo-txt'
+require 'optparse'
+
+# Configuration variables
+$todo_file = File.expand_path "~/Dropbox/todo/todo.txt"
+$title     = "Todo: %P %p %c"
+$content   = "%t"
+
+# Parse command line options
+OptionParser.new do |o|
+  # Set some introductory text that explains the placeholders etc.
+  o.separator %(
+# Placeholders
+
+todo-notify uses a placeholder system for generating its titles and content.
+The placeholders are as following:
+
+    %t - The text content of the task.
+    %P - The task priority.
+    %p - The task +projects.
+    %c - The task @contexts.
+
+Example task:    "(A) My task, woot. +project @context"
+Example title:   "Todo: %P %p %c"
+Example content: "%t"
+
+The notification will then look like this:
+
+    Todo: A +project @context
+    My task, woot.
+
+# Notifications
+
+todo-notify uses the "notify-send" command to show its notifications. If your
+operating system doesn't have a "notify-send" program then todo-notify will not
+work.
+
+# Available arguments
+  )
+
+  # Path to your todo.txt file.
+  o.on('-p',
+       '--path FILE',
+       'Path to your todo.txt FILE. Defaults to
+        "~/Dropbox/todo/todo.txt".') do |file|
+    $todo_file = File.expand_path file
+  end
+
+  # Notification title.
+  o.on('-t',
+       '--title TITLE',
+       'Title of the notification. Defaults to
+        "Todo: %P %p %c".') do |title|
+    $title = title
+  end
+
+  # Notification content.
+  o.on('-c',
+       '--content CONTENT',
+       'The content of the notification. Defaults to
+        "%t".') do |content|
+    $content = content
+  end
+
+  # Display help.
+  o.on('-h', '--help', 'Display this screen.') do
+    puts o
+    exit
+  end
+end.parse!
+
+def parse_placeholders string, task
+  string.gsub('%c', task.contexts.join(', ')).
+         gsub('%p', task.projects.join(', ')).
+         gsub('%P', task.priority).
+         gsub('%t', task.text).
+         gsub(/\s+/, ' ')
+end
+
+list  = Todo::List.new $todo_file
+task  = list.sample
+
+title   = parse_placeholders $title, task
+content = parse_placeholders $content, task
+
+`notify-send "#{title}" "#{content}"`
